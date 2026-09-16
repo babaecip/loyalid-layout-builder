@@ -8,6 +8,11 @@ Layout Builder UI + JSON-to-HTML Renderer for CMS. Supports Bootstrap 4/5, Tailw
 npm install @loyalid/layout-builder
 ```
 
+Or via CDN:
+```html
+<script src="https://unpkg.com/@loyalid/layout-builder"></script>
+```
+
 ## Quick Start
 
 ### Native JS / Script Tag
@@ -109,8 +114,10 @@ function LayoutRenderer({ data, framework = 5 }) {
 
 - **Layout Builder UI** — 3-panel interface: Style | Order | Preview
 - **4 CSS Frameworks** — Native, Bootstrap 4, Bootstrap 5, Tailwind CSS
-- **Blocks** — Title, Paragraph, Image, Divider
-- **Inline Links** — `[text](url)` Markdown syntax in content
+- **Blocks** — Title, Paragraph, Quote, Image, Divider
+- **Font Type** — Per-block font family selection (Inherit, Arial, Georgia, etc. or Custom)
+- **Inline Links** — `[text](url)` Markdown syntax in Paragraph and Quote content
+- **Add Hyperlink** — Button to insert links via modal (Paragraph & Quote blocks)
 - **Convert from HTML** — Paste editor HTML → auto-convert to blocks
 - **Drag & Drop** — Reorder blocks, move up/down, delete
 - **Apply to All** — Apply text color or font size to all blocks
@@ -120,8 +127,9 @@ function LayoutRenderer({ data, framework = 5 }) {
 
 | Type | Fields |
 |------|--------|
-| `title` | `content`, `level` (h1-h6), `link_url`, `link_target`, `style` |
-| `paragraph` | `content` (supports `[text](url)` links), `style` |
+| `title` | `content`, `level` (h1-h6), `link_url`, `link_target`, `style` (incl. `font_family`, `font_family_custom`) |
+| `paragraph` | `content` (supports `[text](url)` links), `style` (incl. `font_family`, `font_family_custom`) |
+| `quote` | `content` (supports `[text](url)` links), `citation`, `style` (incl. `font_family`, `font_family_custom`, `border_left_color`, `border_left_width`) |
 | `image` | `url`, `alt`, `style` |
 | `divider` | `style` (border_style, border_color, border_width, width) |
 
@@ -147,12 +155,25 @@ function LayoutRenderer({ data, framework = 5 }) {
       "type": "title",
       "content": "Hello World",
       "level": "h2",
-      "style": { "font_size": "24px", "font_weight": "bold", "color": "#000000" }
+      "style": { "font_size": "24px", "font_weight": "bold", "color": "#000000", "font_family": "Georgia" }
     },
     {
       "type": "paragraph",
       "content": "Read more about [ICAD](https://icad.id) here.",
       "style": { "font_size": "16px", "line_height": "1.5", "color": "#333333" }
+    },
+    {
+      "type": "quote",
+      "content": "Design is not just what it looks like. Design is how it works.",
+      "citation": "Steve Jobs",
+      "style": {
+        "font_size": "18px",
+        "line_height": "1.6",
+        "color": "#555555",
+        "border_left_color": "#3b82f6",
+        "border_left_width": "4px",
+        "font_family": "Georgia"
+      }
     }
   ]
 }
