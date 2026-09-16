@@ -177,12 +177,14 @@ function defaultBlock(type) {
       return { ...base, url: '', alt: '', style: { width: '100%', text_align: 'center', margin_bottom: '16px' } };
     case 'divider':
       return { ...base, style: { border_style: 'solid', border_color: '#cccccc', border_width: '1px', margin_top: '16px', margin_bottom: '16px', width: '100%' } };
+    case 'quote':
+      return { ...base, style: { font_size: '16px', line_height: '1.5', text_align: 'left', color: '#333333', margin_bottom: '16px', padding: '0', border_left_color: '#cccccc', border_left_width: '3px' } };
     default:
       return base;
   }
 }
 
-const BLOCK_ICONS = { title: 'T', paragraph: 'P', image: 'I', divider: 'D' };
+const BLOCK_ICONS = { title: 'T', paragraph: 'P', image: 'I', divider: 'D', quote: 'Q' };
 
 // ========================
 // LAYOUT BUILDER CLASS
@@ -533,7 +535,7 @@ class LayoutBuilder {
     const body = el('div');
     body.style.cssText = 'padding:12px 14px;display:flex;gap:6px;flex-wrap:wrap;';
 
-    ['title', 'image', 'paragraph', 'divider'].forEach(type => {
+    ['title', 'image', 'paragraph', 'quote', 'divider'].forEach(type => {
       const btn = el('button');
       btn.style.cssText = 'padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px;';
       btn.innerHTML = `<span style="font-weight:700;">${BLOCK_ICONS[type]}</span> ${type.charAt(0).toUpperCase() + type.slice(1)}`;
@@ -574,11 +576,12 @@ class LayoutBuilder {
     const expanded = this._expandedBlocks.has(index);
     const wrap = el('div');
     wrap.style.cssText = 'margin-bottom:8px;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;';
+    wrap.dataset.blockIndex = index;
 
     // Header
     const hdr = el('div');
     hdr.style.cssText = 'padding:8px 10px;background:#f1f5f9;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;';
-    const preview = block.content ? String(block.content).substring(0, 30) + (block.content.length > 30 ? '...' : '') : (block.type === 'image' ? '\uD83D\uDCF7 Image' : block.type === 'divider' ? '\u2015 Divider' : '');
+    const preview = block.content ? String(block.content).substring(0, 30) + (block.content.length > 30 ? '...' : '') : (block.type === 'image' ? '\uD83D\uDCF7 Image' : block.type === 'divider' ? '\u2015 Divider' : block.type === 'quote' ? '\u201C Quote' : '');
     hdr.innerHTML = `<span style="display:flex;align-items:center;gap:6px;"><span style="font-weight:700;font-size:11px;">\u25BC</span><span style="font-size:11px;font-weight:600;color:#6b7280;">${block.type.toUpperCase()}</span><span style="color:#9ca3af;font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(preview)}</span></span>`;
     const actions = el('span');
     actions.style.cssText = 'display:flex;gap:2px;';
@@ -622,17 +625,62 @@ class LayoutBuilder {
     const body = el('div');
     body.style.cssText = 'padding:10px;background:#fff;';
 
+    // Font Family helper (shared for title, paragraph, quote)
+    const fontFamilyOpts = { '': 'Inherit', Arial: 'Arial', Helvetica: 'Helvetica', Georgia: 'Georgia', 'Times New Roman': 'Times New Roman', 'Courier New': 'Courier New', 'Comic Sans MS': 'Comic Sans MS', Verdana: 'Verdana', Impact: 'Impact', __custom__: 'Custom...' };
+    const ffVal = block.style.font_family || '';
+    const ffDisplay = ffVal === '__custom__' ? '__custom__' : ffVal;
+
+    const renderFontFamilyField = (b) => {
+      const wrap = el('div');
+      wrap.style.cssText = 'margin-bottom:10px;';
+      wrap.innerHTML = `<label style="display:block;font-size:11px;color:#6b7280;margin-bottom:3px;">Font Type</label>`;
+      const row = el('div');
+      row.style.cssText = 'display:flex;gap:6px;align-items:center;';
+      const sel = el('select');
+      sel.style.cssText = 'padding:5px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;flex:1;';
+      Object.entries(fontFamilyOpts).forEach(([val, label]) => {
+        const o = document.createElement('option');
+        o.value = val; o.textContent = label;
+        if (val === ffDisplay) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.onchange = () => { b.style.font_family = sel.value; this.sync(); this.renderLeft(); };
+      row.appendChild(sel);
+      if (ffDisplay === '__custom__') {
+        const ci = el('input'); ci.type = 'text'; ci.value = b.style.font_family_custom || '';
+        ci.placeholder = "e.g. 'Roboto', sans-serif";
+        ci.style.cssText = 'flex:1;padding:5px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;';
+        ci.oninput = () => { b.style.font_family_custom = ci.value; this.sync(); };
+        row.appendChild(ci);
+      }
+      wrap.appendChild(row);
+      return wrap;
+    };
+
     if (block.type === 'title') {
       body.appendChild(this._selectField('Title Level', `_b${index}_level`, block.level || 'h2', { h1: 'H1', h2: 'H2', h3: 'H3', h4: 'H4', h5: 'H5', h6: 'H6' }, (v) => { block.level = v; }));
       body.appendChild(this._textField('Title Text', `_b${index}_content`, block.content, 'Enter title...', (v) => { block.content = v; }));
       body.appendChild(this._textField('Link URL', `_b${index}_link_url`, block.link_url || '', 'https://... (optional)', (v) => { block.link_url = v; }));
       body.appendChild(this._selectField('Link Target', `_b${index}_link_target`, block.link_target || '', { '': 'Same Tab', _blank: 'New Tab' }, (v) => { block.link_target = v; }));
+      body.appendChild(renderFontFamilyField(block));
       body.appendChild(this._selectField('Font Size', `_b${index}_fs`, toShorthand('font_size', block.style.font_size), FONT_SIZES, (v) => { block.style.font_size = toCSS('font_size', v); }));
       body.appendChild(this._selectField('Font Weight', `_b${index}_fw`, block.style.font_weight || 'normal', FONT_WEIGHTS, (v) => { block.style.font_weight = v; }));
       body.appendChild(this._colorField('Color', `_b${index}_color`, block.style.color || '#000000', (v) => { block.style.color = v; }));
       body.appendChild(this._selectField('Text Align', `_b${index}_ta`, block.style.text_align || 'left', { left: 'Left', center: 'Center', right: 'Right', justify: 'Justify' }, (v) => { block.style.text_align = v; }));
       body.appendChild(this._selectField('Letter Spacing', `_b${index}_ls`, toShorthand('letter_spacing', block.style.letter_spacing), LETTER_SPACINGS, (v) => { block.style.letter_spacing = toCSS('letter_spacing', v); }));
       body.appendChild(this._selectField('Text Transform', `_b${index}_tt`, block.style.text_transform || '', { '': 'None', uppercase: 'Uppercase', lowercase: 'Lowercase', capitalize: 'Capitalize' }, (v) => { block.style.text_transform = v; }));
+      body.appendChild(this._selectField('Margin Bottom', `_b${index}_mb`, toShorthand('margin_bottom', block.style.margin_bottom), SPACINGS, (v) => { block.style.margin_bottom = toCSS('margin_bottom', v); }));
+    }
+
+    if (block.type === 'quote') {
+      body.appendChild(this._textField('Quote Text', `_b${index}_content`, block.content, 'Enter quote...', (v) => { block.content = v; }));
+      body.appendChild(this._textField('Citation', `_b${index}_citation`, block.citation || '', 'e.g. Author Name', (v) => { block.citation = v; }));
+      body.appendChild(this._colorField('Border Left Color', `_b${index}_blc`, block.style.border_left_color || '#cccccc', (v) => { block.style.border_left_color = v; }));
+      body.appendChild(this._selectField('Border Left Width', `_b${index}_blw`, block.style.border_left_width || '3px', { '1px': '1px (thin)', '2px': '2px', '3px': '3px', '4px': '4px', '5px': '5px (thick)' }, (v) => { block.style.border_left_width = v; }));
+      body.appendChild(renderFontFamilyField(block));
+      body.appendChild(this._selectField('Font Size', `_b${index}_fs`, toShorthand('font_size', block.style.font_size), FONT_SIZES, (v) => { block.style.font_size = toCSS('font_size', v); }));
+      body.appendChild(this._selectField('Line Height', `_b${index}_lh`, toShorthand('line_height', block.style.line_height), LINE_HEIGHTS, (v) => { block.style.line_height = toCSS('line_height', v); }));
+      body.appendChild(this._colorField('Color', `_b${index}_color`, block.style.color || '#333333', (v) => { block.style.color = v; }));
       body.appendChild(this._selectField('Margin Bottom', `_b${index}_mb`, toShorthand('margin_bottom', block.style.margin_bottom), SPACINGS, (v) => { block.style.margin_bottom = toCSS('margin_bottom', v); }));
     }
 
@@ -664,6 +712,12 @@ class LayoutBuilder {
       taWrap.appendChild(ta);
       body.appendChild(taWrap);
 
+      body.appendChild(this._selectField('Font Size', `_b${index}_fs`, toShorthand('font_size', block.style.font_size), FONT_SIZES, (v) => { block.style.font_size = toCSS('font_size', v); }));
+      body.appendChild(this._selectField('Line Height', `_b${index}_lh`, toShorthand('line_height', block.style.line_height), LINE_HEIGHTS, (v) => { block.style.line_height = toCSS('line_height', v); }));
+      body.appendChild(this._selectField('Text Align', `_b${index}_ta`, block.style.text_align || 'left', { left: 'Left', center: 'Center', right: 'Right', justify: 'Justify' }, (v) => { block.style.text_align = v; }));
+      body.appendChild(this._selectField('Letter Spacing', `_b${index}_ls`, toShorthand('letter_spacing', block.style.letter_spacing), LETTER_SPACINGS, (v) => { block.style.letter_spacing = toCSS('letter_spacing', v); }));
+      body.appendChild(this._selectField('Text Transform', `_b${index}_tt`, block.style.text_transform || '', { '': 'None', uppercase: 'Uppercase', lowercase: 'Lowercase', capitalize: 'Capitalize' }, (v) => { block.style.text_transform = v; }));
+      body.appendChild(renderFontFamilyField(block));
       body.appendChild(this._selectField('Font Size', `_b${index}_fs`, toShorthand('font_size', block.style.font_size), FONT_SIZES, (v) => { block.style.font_size = toCSS('font_size', v); }));
       body.appendChild(this._selectField('Line Height', `_b${index}_lh`, toShorthand('line_height', block.style.line_height), LINE_HEIGHTS, (v) => { block.style.line_height = toCSS('line_height', v); }));
       body.appendChild(this._selectField('Text Align', `_b${index}_ta`, block.style.text_align || 'left', { left: 'Left', center: 'Center', right: 'Right', justify: 'Justify' }, (v) => { block.style.text_align = v; }));
@@ -736,8 +790,18 @@ class LayoutBuilder {
       icon.textContent = BLOCK_ICONS[block.type] || '?';
 
       const label = el('span');
-      label.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#374151;';
-      label.textContent = block.content ? String(block.content).substring(0, 25) + (block.content.length > 25 ? '...' : '') : (block.type === 'image' ? '\uD83D\uDCF7 Image' : block.type === 'divider' ? '\u2015 Divider' : '');
+      label.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#374151;cursor:pointer;';
+      label.textContent = block.content ? String(block.content).substring(0, 25) + (block.content.length > 25 ? '...' : '') : (block.type === 'image' ? '\uD83D\uDCF7 Image' : block.type === 'divider' ? '\u2015 Divider' : block.type === 'quote' ? '\u201C Quote' : '');
+
+      // Click label → expand + scroll to block editor
+      label.onclick = () => {
+        this._expandedBlocks.add(i);
+        this.renderLeft();
+        setTimeout(() => {
+          const blockEl = this.leftPanel.querySelector(`[data-block-index=\"${i}\"]`);
+          if (blockEl) blockEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+      };
 
       const del = el('span');
       del.textContent = '\u00D7';
@@ -881,6 +945,13 @@ class LayoutBuilder {
         case 'divider':
           html += `<hr style="${bcss} border:none;border-top:${block.style.border_width || '1px'} ${block.style.border_style || 'solid'} ${block.style.border_color || '#cccccc'};width:${block.style.width || '100%'};" />`;
           break;
+        case 'quote': {
+          const blc = block.style.border_left_color || '#cccccc';
+          const blw = block.style.border_left_width || '3px';
+          const citation = block.citation ? `<footer style="margin-top:8px;font-size:0.85em;opacity:0.7;">\u2014 ${esc(block.citation)}</footer>` : '';
+          html += `<blockquote style="${bcss} border-left:${blw} solid ${blc}; padding-left:16px; margin:0 0 ${block.style.margin_bottom || '16px'} 0;">${parseInlineLinks(block.content || '')}${citation}</blockquote>`;
+          break;
+        }
       }
     });
 
@@ -1092,6 +1163,20 @@ export function generateLayout(data, framework = 0) {
           html += `<hr class="${[bwCls, bsCls, bcCls, wCls, mtCls, mbCls].filter(Boolean).join(' ')}" />\n`;
         } else {
           html += `<hr style="${bcss} border:none;border-top:${block.style.border_width || '1px'} ${block.style.border_style || 'solid'} ${block.style.border_color || '#cccccc'};width:${block.style.width || '100%'};" />\n`;
+        }
+        break;
+      }
+      case 'quote': {
+        const blc = block.style.border_left_color || '#cccccc';
+        const blw = block.style.border_left_width || '3px';
+        const ff = block.style.font_family === '__custom__' ? (block.style.font_family_custom || '') : (block.style.font_family || '');
+        const ffStyle = ff ? ` font-family:${ff};` : '';
+        const citation = block.citation ? `<footer style="margin-top:8px;font-size:0.85em;opacity:0.7;">\u2014 ${esc(block.citation)}</footer>` : '';
+        if (isTailwind) {
+          const twCls = buildTailwindClasses({ ...(block.style || {}) });
+          html += `<blockquote class="${twCls} border-l-[${blw}] border-l-${twColor(blc)} pl-4">${parseInlineLinks(block.content || '')}${citation}</blockquote>\n`;
+        } else {
+          html += `<blockquote style="${bcss}${ffStyle} border-left:${blw} solid ${blc}; padding-left:16px;">${parseInlineLinks(block.content || '')}${citation}</blockquote>\n`;
         }
         break;
       }
