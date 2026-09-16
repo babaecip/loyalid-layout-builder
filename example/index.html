@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loyalid Layout Builder - Demo</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f5f5f5; padding: 20px; }
+    .demo-box { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    textarea { font-family: monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="mb-4">@loyalid/layout-builder Demo</h2>
+
+    <!-- Input -->
+    <div class="demo-box">
+      <label class="form-label fw-bold">JSON Input</label>
+      <textarea id="jsonInput" class="form-control" rows="10"></textarea>
+      <div class="mt-2">
+        <select id="bsVersion" class="form-select form-select-sm d-inline-block w-auto me-2">
+          <option value="0">No Bootstrap</option>
+          <option value="4">Bootstrap 4</option>
+          <option value="5" selected>Bootstrap 5</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="runDemo()">Render</button>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="demo-box">
+      <label class="form-label fw-bold">Output</label>
+      <div id="output"></div>
+    </div>
+
+    <!-- Generated HTML -->
+    <div class="demo-box">
+      <label class="form-label fw-bold">Generated HTML</label>
+      <pre id="htmlOutput" class="bg-light p-3 rounded" style="font-size:11px;max-height:300px;overflow:auto;"></pre>
+    </div>
+  </div>
+
+  <!-- Load library -->
+  <script src="../dist/index.js"></script>
+
+  <!-- Demo script -->
+  <script>
+    const sampleData = {
+      general_style: {
+        background_color: "#ffffff",
+        text_color: "#333333",
+        font_size: "14px",
+        font_family: "Arial, sans-serif",
+        max_width: "760px",
+        margin: "0 auto",
+        padding: "16px",
+        text_align: "left"
+      },
+      blocks: [
+        {
+          type: "title",
+          content: "Newsroom : 6 min read",
+          level: "h2",
+          style: {
+            font_size: "24px",
+            font_weight: "bold",
+            color: "#000000",
+            margin_bottom: "16px"
+          }
+        },
+        {
+          type: "paragraph",
+          content: "What does contemporary Indonesian creativity look like today? The answer is not always found inside a traditional gallery.",
+          style: {
+            font_size: "14px",
+            line_height: "1.6",
+            color: "#333333",
+            margin_bottom: "16px"
+          }
+        },
+        {
+          type: "divider",
+          style: {
+            border_style: "solid",
+            border_color: "#cccccc",
+            border_width: "1px",
+            margin_top: "16px",
+            margin_bottom: "16px"
+          }
+        },
+        {
+          type: "title",
+          content: "Where Art Becomes Part of Everyday Life",
+          level: "h3",
+          link_url: "https://example.com",
+          link_target: "_blank",
+          style: {
+            font_size: "20px",
+            font_weight: "bold",
+            color: "#1a1a1a",
+            margin_bottom: "12px"
+          }
+        },
+        {
+          type: "paragraph",
+          content: "Contemporary art can sometimes feel distant — something to be viewed from a few metres away, discussed in a gallery, and then left behind.",
+          style: {
+            font_size: "14px",
+            line_height: "1.6",
+            color: "#555555",
+            margin_bottom: "16px"
+          }
+        },
+        {
+          type: "image",
+          url: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800",
+          alt: "Contemporary Art",
+          style: {
+            width: "100%",
+            margin_bottom: "16px"
+          }
+        }
+      ]
+    };
+
+    // Load sample on page load
+    document.getElementById('jsonInput').value = JSON.stringify(sampleData, null, 2);
+
+    function runDemo() {
+      const json = document.getElementById('jsonInput').value;
+      const bs = parseInt(document.getElementById('bsVersion').value);
+      const data = JSON.parse(json);
+
+      const html = LoyalidLayout.generateLayout(data, bs);
+      document.getElementById('output').innerHTML = html;
+      document.getElementById('htmlOutput').textContent = html;
+    }
+
+    // Auto-run on load
+    runDemo();
+  </script>
+</body>
+</html>
