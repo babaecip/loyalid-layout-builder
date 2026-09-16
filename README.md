@@ -121,6 +121,7 @@ function LayoutRenderer({ data, framework = 5 }) {
 - **4 CSS Frameworks** — Native, Bootstrap 4, Bootstrap 5, Tailwind CSS
 - **Blocks** — Title, Paragraph, Quote, Image, Divider
 - **Font Type** — Per-block font family selection (Inherit, Arial, Georgia, etc. or Custom)
+- **Quote Background** — Color picker with Transparent option for quote blocks
 - **Inline Links** — `[text](url)` Markdown syntax in Paragraph and Quote content
 - **Add Hyperlink** — Button to insert links via modal (Paragraph & Quote blocks)
 - **Convert from HTML** — Paste editor HTML → auto-convert to blocks
@@ -134,7 +135,7 @@ function LayoutRenderer({ data, framework = 5 }) {
 |------|--------|
 | `title` | `content`, `level` (h1-h6), `link_url`, `link_target`, `style` (incl. `font_family`, `font_family_custom`) |
 | `paragraph` | `content` (supports `[text](url)` links), `style` (incl. `font_family`, `font_family_custom`) |
-| `quote` | `content` (supports `[text](url)` links), `citation`, `style` (incl. `font_family`, `font_family_custom`, `border_left_color`, `border_left_width`) |
+| `quote` | `content` (supports `[text](url)` links), `citation`, `style` (incl. `font_family`, `font_family_custom`, `border_left_color`, `border_left_width`, `background_color`) |
 | `image` | `url`, `alt`, `style` |
 | `divider` | `style` (border_style, border_color, border_width, width) |
 
@@ -177,6 +178,7 @@ function LayoutRenderer({ data, framework = 5 }) {
         "color": "#555555",
         "border_left_color": "#3b82f6",
         "border_left_width": "4px",
+        "background_color": "#fef3c7",
         "font_family": "Georgia"
       }
     }
