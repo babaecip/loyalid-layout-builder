@@ -644,7 +644,13 @@ class LayoutBuilder {
         if (val === ffDisplay) o.selected = true;
         sel.appendChild(o);
       });
-      sel.onchange = () => { b.style.font_family = sel.value; this.sync(); this.renderLeft(); };
+      sel.onchange = () => {
+        const prevCustom = b.style.font_family === '__custom__';
+        b.style.font_family = sel.value;
+        this.sync();
+        // Only re-render if toggling Custom on/off (to show/hide custom input)
+        if (prevCustom !== (sel.value === '__custom__')) this.renderLeft();
+      };
       row.appendChild(sel);
       if (ffDisplay === '__custom__') {
         const ci = el('input'); ci.type = 'text'; ci.value = b.style.font_family_custom || '';
@@ -673,7 +679,29 @@ class LayoutBuilder {
     }
 
     if (block.type === 'quote') {
-      body.appendChild(this._textField('Quote Text', `_b${index}_content`, block.content, 'Enter quote...', (v) => { block.content = v; }));
+      // Textarea for quote content with hyperlink support
+      const taWrap = el('div');
+      taWrap.style.cssText = 'margin-bottom:10px;';
+      const labelRow = el('div');
+      labelRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;';
+      const labelText = el('span');
+      labelText.style.cssText = 'font-size:11px;color:#6b7280;';
+      labelText.textContent = 'Quote Text';
+      labelRow.appendChild(labelText);
+      const linkBtn = el('button');
+      linkBtn.type = 'button';
+      linkBtn.textContent = '+ Add Hyperlink';
+      linkBtn.style.cssText = 'font-size:10px;padding:2px 8px;border:1px solid #d1d5db;border-radius:4px;background:#f9fafb;cursor:pointer;color:#3b82f6;';
+      linkBtn.onclick = () => this._showLinkModal(qta, block);
+      labelRow.appendChild(linkBtn);
+      taWrap.appendChild(labelRow);
+      const qta = el('textarea');
+      qta.value = block.content || '';
+      qta.placeholder = 'Enter quote... Use [text](url) for inline links.';
+      qta.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;min-height:60px;resize:vertical;font-family:inherit;';
+      qta.oninput = () => { block.content = qta.value; this.sync(); };
+      taWrap.appendChild(qta);
+      body.appendChild(taWrap);
       body.appendChild(this._textField('Citation', `_b${index}_citation`, block.citation || '', 'e.g. Author Name', (v) => { block.citation = v; }));
       body.appendChild(this._colorField('Border Left Color', `_b${index}_blc`, block.style.border_left_color || '#cccccc', (v) => { block.style.border_left_color = v; }));
       body.appendChild(this._selectField('Border Left Width', `_b${index}_blw`, block.style.border_left_width || '3px', { '1px': '1px (thin)', '2px': '2px', '3px': '3px', '4px': '4px', '5px': '5px (thick)' }, (v) => { block.style.border_left_width = v; }));
