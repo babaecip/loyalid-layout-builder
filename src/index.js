@@ -1,12 +1,14 @@
 /**
  * @loyalid/layout-builder
  * Layout Builder UI + JSON-to-HTML Renderer
- * Supports Bootstrap 4 & 5
+ * Supports Bootstrap 4, Bootstrap 5, Tailwind CSS, and Native CSS
  *
  * Usage:
  *   import { initLayoutBuilder, generateLayout, generateFullHTML } from '@loyalid/layout-builder';
  *   initLayoutBuilder('#my-container', '#my-textarea');
- *   const html = generateLayout(data, 5); // Bootstrap 5
+ *   const html = generateLayout(data, 5);       // Bootstrap 5
+ *   const html = generateLayout(data, 'tailwind'); // Tailwind CSS
+ *   const html = generateLayout(data, 0);       // Native (inline styles)
  */
 
 // ========================
@@ -79,6 +81,66 @@ function buildCSS(styles) {
     if (prop && v != null && v !== '') css += `${prop}: ${v}; `;
   }
   return css.trim();
+}
+
+// ========================
+// TAILWIND CSS CLASS MAPPING
+// ========================
+
+const TW_FONT_SIZE = { '10px': 'text-[10px]', '12px': 'text-xs', '13px': 'text-[13px]', '14px': 'text-sm', '16px': 'text-base', '20px': 'text-lg', '24px': 'text-xl', '32px': 'text-2xl', '40px': 'text-3xl', '48px': 'text-4xl' };
+const TW_LINE_HEIGHT = { '1': 'leading-none', '1.25': 'leading-tight', '1.375': 'leading-snug', '1.5': 'leading-normal', '1.625': 'leading-relaxed', '2': 'leading-loose' };
+const TW_SPACING = (v) => {
+  const n = parseFloat(v);
+  if (v === '0' || v === '0px') return '0';
+  if (v === 'auto') return 'auto';
+  if (v === '0 auto') return 'mx-auto';
+  if (!isNaN(n) && n > 0) {
+    const rem = n / 4;
+    return rem === Math.floor(rem) ? String(rem) : `[${v}]`;
+  }
+  return `[${v}]`;
+};
+const TW_WIDTH = { 'auto': 'w-auto', '100%': 'w-full', '75%': 'w-3/4', '66.67%': 'w-2/3', '50%': 'w-1/2', '33.33%': 'w-1/3', '25%': 'w-1/4' };
+const TW_MAX_WIDTH = { '320px': 'max-w-xs', '480px': 'max-w-sm', '640px': 'max-w-md', '760px': 'max-w-[760px]', '960px': 'max-w-lg', '1140px': 'max-w-xl', '100%': 'max-w-full' };
+const TW_BORDER_WIDTH = { '1px': 'border', '2px': 'border-2', '3px': 'border-[3px]', '4px': 'border-4' };
+const TW_BORDER_STYLE = { 'solid': 'border-solid', 'dashed': 'border-dashed', 'dotted': 'border-dotted' };
+const TW_TEXT_ALIGN = { 'left': 'text-left', 'center': 'text-center', 'right': 'text-right', 'justify': 'text-justify' };
+const TW_FONT_WEIGHT = { 'normal': 'font-normal', 'bold': 'font-bold' };
+const TW_TEXT_TRANSFORM = { 'uppercase': 'uppercase', 'lowercase': 'lowercase', 'capitalize': 'capitalize' };
+const TW_LETTER_SPACING = { '-0.05em': 'tracking-tighter', '-0.025em': 'tracking-tight', '0': 'tracking-normal', '0.025em': 'tracking-wide', '0.05em': 'tracking-wider', '0.1em': 'tracking-widest' };
+
+function twColor(val) {
+  if (!val) return '';
+  const map = { '#000000': 'black', '#ffffff': 'white', '#333333': '[#333]', '#cccccc': '[#ccc]', '#999999': '[#999]' };
+  return map[val] ? map[val] : `[${val}]`;
+}
+
+function buildTailwindClasses(styles) {
+  const cls = [];
+  for (const [k, v] of Object.entries(styles)) {
+    if (v == null || v === '' || k === 'wrapper_tag') continue;
+    switch (k) {
+      case 'background_color': cls.push(`bg-${twColor(v)}`); break;
+      case 'text_color': case 'color': cls.push(`text-${twColor(v)}`); break;
+      case 'font_size': cls.push(TW_FONT_SIZE[v] || `text-[${v}]`); break;
+      case 'font_weight': cls.push(TW_FONT_WEIGHT[v] || `font-${v}`); break;
+      case 'font_family': case 'font_family_custom': cls.push(`font-${(v || '').replace(/[^a-zA-Z0-9]/g, '-')}`); break;
+      case 'text_align': cls.push(TW_TEXT_ALIGN[v] || `text-${v}`); break;
+      case 'text_transform': if (TW_TEXT_TRANSFORM[v]) cls.push(TW_TEXT_TRANSFORM[v]); break;
+      case 'letter_spacing': cls.push(TW_LETTER_SPACING[v] || `tracking-[${v}]`); break;
+      case 'line_height': cls.push(TW_LINE_HEIGHT[v] || `leading-[${v}]`); break;
+      case 'padding': { const s = TW_SPACING(v); cls.push(s === '0' ? 'p-0' : s === 'auto' ? '' : `p-${s}`); break; }
+      case 'margin': { const s = TW_SPACING(v); cls.push(s === '0' ? 'm-0' : s === 'auto' ? '' : s === 'mx-auto' ? 'mx-auto' : `m-${s}`); break; }
+      case 'margin_top': { const s = TW_SPACING(v); cls.push(s === '0' ? 'mt-0' : `mt-${s}`); break; }
+      case 'margin_bottom': { const s = TW_SPACING(v); cls.push(s === '0' ? 'mb-0' : `mb-${s}`); break; }
+      case 'width': cls.push(TW_WIDTH[v] || `w-[${v}]`); break;
+      case 'max_width': cls.push(TW_MAX_WIDTH[v] || `max-w-[${v}]`); break;
+      case 'border_style': cls.push(TW_BORDER_STYLE[v] || `border-${v}`); break;
+      case 'border_color': cls.push(`border-${twColor(v)}`); break;
+      case 'border_width': cls.push(TW_BORDER_WIDTH[v] || `border-[${v}]`); break;
+    }
+  }
+  return cls.filter(Boolean).join(' ');
 }
 
 // ========================
@@ -955,13 +1017,25 @@ export function initLayoutBuilder(container, textarea, options = {}) {
 
 /**
  * Generate HTML from layout data (for rendering only, no UI)
+ * @param {Object} data - layout data
+ * @param {number|string} framework - 0 (native/inline), 4 (BS4), 5 (BS5), 'tailwind' or 'tw'
  */
-export function generateLayout(data, bootstrap = 0) {
+export function generateLayout(data, framework = 0) {
   const gs = data.general_style || {};
   const blocks = data.blocks || [];
-  const css = buildCSS(gs);
+  const fw = String(framework).toLowerCase();
+  const isTailwind = fw === 'tailwind' || fw === 'tw';
   const tag = gs.wrapper_tag || 'div';
-  let html = `<${tag} style="${css}">`;
+
+  let html;
+  if (isTailwind) {
+    const twCls = buildTailwindClasses(gs);
+    html = `<${tag} class="${twCls}">`;
+  } else {
+    const css = buildCSS(gs);
+    html = `<${tag} style="${css}">`;
+  }
+
   const inherited = {};
   if (gs.font_family_custom) inherited.font_family_custom = gs.font_family_custom;
   if (gs.font_size) inherited.font_size = gs.font_size;
@@ -969,38 +1043,75 @@ export function generateLayout(data, bootstrap = 0) {
 
   blocks.forEach(block => {
     const merged = { ...inherited, ...(block.style || {}) };
-    const bcss = buildCSS(merged);
+    let bcss;
+    if (isTailwind) {
+      bcss = buildTailwindClasses(merged);
+    } else {
+      bcss = buildCSS(merged);
+    }
+    const styleAttr = isTailwind ? `class="${bcss}"` : `style="${bcss}"`;
+
     switch (block.type) {
       case 'title': {
         const lvl = block.level || 'h2';
         let inner = parseInlineLinks(block.content || '');
-        if (!inner.includes('<a ') && block.link_url) inner = `<a href="${escAttr(block.link_url)}"${block.link_target ? ` target="${escAttr(block.link_target)}"` : ''} style="color:inherit;text-decoration:none;">${esc(block.content || '')}</a>`;
-        html += `<${lvl} style="${bcss}">${inner}</${lvl}>\n`;
+        if (!inner.includes('<a ') && block.link_url) {
+          const linkCls = isTailwind ? 'class="text-inherit no-underline"' : 'style="color:inherit;text-decoration:none;"';
+          inner = `<a href="${escAttr(block.link_url)}"${block.link_target ? ` target="${escAttr(block.link_target)}"` : ''} ${linkCls}>${esc(block.content || '')}</a>`;
+        }
+        html += `<${lvl} ${styleAttr}>${inner}</${lvl}>\n`;
         break;
       }
       case 'paragraph': {
         let content = parseInlineLinks(block.content || '').replace(/\n/g, '<br>');
-        if (!content.includes('<a ') && block.link_url) content = `<a href="${escAttr(block.link_url)}" style="color:inherit;text-decoration:none;">${esc(block.content || '').replace(/\n/g, '<br>')}</a>`;
-        html += `<p style="${bcss}">${content}</p>\n`;
+        if (!content.includes('<a ') && block.link_url) {
+          const linkCls = isTailwind ? 'class="text-inherit no-underline"' : 'style="color:inherit;text-decoration:none;"';
+          content = `<a href="${escAttr(block.link_url)}" ${linkCls}>${esc(block.content || '').replace(/\n/g, '<br>')}</a>`;
+        }
+        html += `<p ${styleAttr}>${content}</p>\n`;
         break;
       }
       case 'image':
-        if (block.url) html += `<img src="${escAttr(block.url)}" alt="${escAttr(block.alt || '')}" style="${bcss} max-width:100%;height:auto;" />\n`;
+        if (block.url) {
+          const imgExtra = isTailwind ? 'max-w-full h-auto' : 'max-width:100%;height:auto;';
+          const imgAttr = isTailwind ? `class="${bcss} ${imgExtra}"` : `style="${bcss} ${imgExtra}"`;
+          html += `<img src="${escAttr(block.url)}" alt="${escAttr(block.alt || '')}" ${imgAttr} />\n`;
+        }
         break;
-      case 'divider':
-        html += `<hr style="${bcss} border:none;border-top:${block.style.border_width || '1px'} ${block.style.border_style || 'solid'} ${block.style.border_color || '#cccccc'};width:${block.style.width || '100%'};" />\n`;
+      case 'divider': {
+        if (isTailwind) {
+          const bw = block.style.border_width || '1px';
+          const bs = block.style.border_style || 'solid';
+          const bc = block.style.border_color || '#cccccc';
+          const wCls = TW_WIDTH[block.style.width] || `w-[${block.style.width || '100%'}]`;
+          const mtCls = block.style.margin_top ? `mt-${TW_SPACING(block.style.margin_top)}` : '';
+          const mbCls = block.style.margin_bottom ? `mb-${TW_SPACING(block.style.margin_bottom)}` : '';
+          const bwCls = TW_BORDER_WIDTH[bw] || `border-[${bw}]`;
+          const bsCls = TW_BORDER_STYLE[bs] || `border-${bs}`;
+          const bcCls = `border-${twColor(bc)}`;
+          html += `<hr class="${[bwCls, bsCls, bcCls, wCls, mtCls, mbCls].filter(Boolean).join(' ')}" />\n`;
+        } else {
+          html += `<hr style="${bcss} border:none;border-top:${block.style.border_width || '1px'} ${block.style.border_style || 'solid'} ${block.style.border_color || '#cccccc'};width:${block.style.width || '100%'};" />\n`;
+        }
         break;
+      }
     }
   });
+
   html += `</${tag}>`;
   return html;
 }
 
 /**
  * Generate full standalone HTML page (wkhtml-style)
+ * @param {Object} data - layout data
+ * @param {Object} opts - { title, framework: 'native'|'tailwind'|4|5 }
  */
 export function generateFullHTML(data, options = {}) {
-  const inner = generateLayout(data);
+  const fw = options.framework || options.bootstrap || 0;
+  const isTailwind = String(fw).toLowerCase() === 'tailwind' || String(fw).toLowerCase() === 'tw';
+  const inner = generateLayout(data, fw);
   const title = options.title || 'Article';
-  return `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${esc(title)}</title>\n  <style>\n    * { margin: 0; padding: 0; box-sizing: border-box; }\n    body { background: #f0f0f0; }\n    img { max-width: 100%; height: auto; }\n    a { color: inherit; text-decoration: none; }\n  </style>\n</head>\n<body>\n${inner}\n</body>\n</html>`;
+  const tailwindCDN = isTailwind ? '\n  <script src="https://cdn.tailwindcss.com"></script>' : '';
+  return `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${esc(title)}</title>${tailwindCDN}\n  <style>\n    * { margin: 0; padding: 0; box-sizing: border-box; }\n    body { background: #f0f0f0; }\n    img { max-width: 100%; height: auto; }\n    a { color: inherit; text-decoration: none; }\n  </style>\n</head>\n<body>\n${inner}\n</body>\n</html>`;
 }

@@ -1,7 +1,7 @@
 {
   "name": "@loyalid/layout-builder",
   "version": "1.0.0",
-  "description": "Layout Builder UI + JSON-to-HTML Renderer for CMS. Bootstrap 4 & 5.",
+  "description": "Layout Builder UI + JSON-to-HTML Renderer for CMS. Bootstrap 4/5, Tailwind CSS, Native CSS.",
   "main": "dist/index.js",
   "module": "src/index.js",
   "scripts": {

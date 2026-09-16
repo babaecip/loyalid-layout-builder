@@ -9,7 +9,7 @@
 <body class="bg-light">
 <div class="container py-4">
   <h1 class="mb-1">@loyalid/layout-builder</h1>
-  <p class="text-muted mb-3">Drop-in Layout Builder UI + Renderer for CMS. Outputs JSON. Bootstrap 4 &amp; 5.</p>
+  <p class="text-muted mb-3">Drop-in Layout Builder UI + Renderer for CMS. Outputs JSON. Bootstrap 4/5, Tailwind CSS, Native CSS.</p>
 
   <!-- Tabs -->
   <ul class="nav nav-tabs" id="mainTabs" role="tablist">
@@ -62,8 +62,9 @@ export default function LayoutEditor({ value, onChange }) {
 // --- Renderer component ---
 import { generateFullHTML } from '@loyalid/layout-builder';
 
-export function LayoutRenderer({ data, bootstrap = 5 }) {
-  const html = generateFullHTML(data);
+export function LayoutRenderer({ data, framework = 5 }) {
+  // framework: 0 (native), 4 (BS4), 5 (BS5), 'tailwind'
+  const html = generateFullHTML(data, { framework });
   return &lt;iframe srcDoc={html} style={{ width: '100%', height: 600, border: 'none' }} /&gt;;
 }</code></pre>
 
@@ -82,7 +83,9 @@ export function LayoutRenderer({ data, bootstrap = 5 }) {
 &lt;!-- Renderer: JSON to HTML --&gt;
 &lt;script&gt;
   const data = JSON.parse(document.getElementById('layoutData').value);
-  const html = LoyalidLayout.generateLayout(data, 5); // Bootstrap 5
+  const html = LoyalidLayout.generateLayout(data, 5);       // Bootstrap 5
+  const html = LoyalidLayout.generateLayout(data, 'tailwind'); // Tailwind CSS
+  const html = LoyalidLayout.generateLayout(data, 0);       // Native (inline styles)
   document.getElementById('output').innerHTML = html;
 &lt;/script&gt;
 
@@ -129,8 +132,8 @@ export function LayoutRenderer({ data, bootstrap = 5 }) {
         <thead><tr><th>Function</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td><code>initLayoutBuilder(container, textarea, opts)</code></td><td>Mount builder UI, auto-sync JSON to textarea</td></tr>
-          <tr><td><code>generateLayout(data, bootstrap)</code></td><td>Render JSON to HTML. <code>bootstrap</code>: <code>0</code>, <code>4</code>, or <code>5</code></td></tr>
-          <tr><td><code>generateFullHTML(data, opts)</code></td><td>Full standalone HTML page from JSON</td></tr>
+          <tr><td><code>generateLayout(data, framework)</code></td><td>Render JSON to HTML. <code>framework</code>: <code>0</code> (native), <code>4</code> (BS4), <code>5</code> (BS5), <code>'tailwind'</code></td></tr>
+          <tr><td><code>generateFullHTML(data, opts)</code></td><td>Full standalone HTML page. <code>opts.framework</code> same as above.</td></tr>
         </tbody>
       </table>
 
@@ -141,7 +144,9 @@ export function LayoutRenderer({ data, bootstrap = 5 }) {
         <li>Inline links: <code>[text](url)</code> in content</li>
         <li>Convert from HTML: paste editor HTML → auto-convert</li>
         <li>Drag &amp; drop reorder, move up/down, delete</li>
-        <li>Bootstrap 4 &amp; 5 class support</li>
+        <li><strong>Native CSS</strong> — inline styles (default)</li>
+        <li><strong>Bootstrap 4 &amp; 5</strong> — container classes + inline styles</li>
+        <li><strong>Tailwind CSS</strong> — utility classes (<code>text-center</code>, <code>bg-[#000]</code>, etc.)</li>
       </ul>
     </div>
 
@@ -163,9 +168,10 @@ export function LayoutRenderer({ data, bootstrap = 5 }) {
           <textarea id="rendererInput" class="form-control font-monospace" style="height:350px;font-size:11px;" placeholder='Paste layout JSON here...'></textarea>
           <div class="mt-2 d-flex gap-2">
             <select id="bsVersion" class="form-select form-select-sm" style="width:auto;">
-              <option value="0">No Bootstrap</option>
+              <option value="0">Native CSS (inline)</option>
               <option value="4">Bootstrap 4</option>
-              <option value="5" selected>Bootstrap 5</option>
+              <option value="5">Bootstrap 5</option>
+              <option value="tailwind">Tailwind CSS</option>
             </select>
             <button class="btn btn-primary btn-sm" onclick="renderPreview()">Render</button>
             <button class="btn btn-outline-secondary btn-sm" onclick="useBuilderJSON()">Use Builder JSON</button>
