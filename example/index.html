@@ -25,31 +25,103 @@
       <h5>Install</h5>
 <pre class="bg-dark text-light p-3 rounded"><code>npm install @loyalid/layout-builder</code></pre>
 
-      <h5 class="mt-4">ES Module</h5>
-<pre class="bg-dark text-light p-3 rounded"><code>import { initLayoutBuilder, generateLayout, generateFullHTML } from '@loyalid/layout-builder';
+      <!-- React -->
+      <h5 class="mt-4">React</h5>
+<pre class="bg-dark text-light p-3 rounded"><code>import { useEffect, useRef } from 'react';
+import { initLayoutBuilder, generateLayout } from '@loyalid/layout-builder';
 
-// Builder UI — syncs JSON to textarea
-initLayoutBuilder('#builderContainer', '#layoutData');
+export default function LayoutEditor({ value, onChange }) {
+  const containerRef = useRef(null);
+  const textareaRef = useRef(null);
 
-// Render JSON → HTML (Bootstrap version: 4 or 5)
-const html = generateLayout(data, 5);
+  useEffect(() => {
+    // Create hidden textarea for JSON sync
+    const ta = document.createElement('textarea');
+    ta.style.display = 'none';
+    ta.value = value || '';
+    document.body.appendChild(ta);
+    textareaRef.current = ta;
 
-// Full standalone HTML page
-const page = generateFullHTML(data, { title: 'My Article' });</code></pre>
+    // Init builder
+    initLayoutBuilder(containerRef.current, ta);
 
-      <h5 class="mt-4">Script Tag</h5>
-<pre class="bg-dark text-light p-3 rounded"><code>&lt;script src="/dist/index.js"&gt;&lt;/script&gt;
+    // Sync changes back to React state
+    const interval = setInterval(() => {
+      if (ta.value !== value) onChange(ta.value);
+    }, 300);
+
+    return () => {
+      clearInterval(interval);
+      ta.remove();
+    };
+  }, []);
+
+  return &lt;div ref={containerRef} style={{ height: 600 }} /&gt;;
+}
+
+// --- Renderer component ---
+import { generateFullHTML } from '@loyalid/layout-builder';
+
+export function LayoutRenderer({ data, bootstrap = 5 }) {
+  const html = generateFullHTML(data);
+  return &lt;iframe srcDoc={html} style={{ width: '100%', height: 600, border: 'none' }} /&gt;;
+}</code></pre>
+
+      <!-- Native JS -->
+      <h5 class="mt-4">Native JS</h5>
+<pre class="bg-dark text-light p-3 rounded"><code>&lt;!-- Include the script --&gt;
+&lt;script src="/dist/index.js"&gt;&lt;/script&gt;
+
+&lt;!-- Builder: mount UI, auto-sync JSON to textarea --&gt;
+&lt;div id="builder" style="height: 600px;"&gt;&lt;/div&gt;
+&lt;textarea id="layoutData" style="display:none;"&gt;&lt;/textarea&gt;
 &lt;script&gt;
-  LoyalidLayout.initLayoutBuilder('#builder', '#jsonData');
-  const html = LoyalidLayout.generateLayout(data, 5);
+  LoyalidLayout.initLayoutBuilder('#builder', '#layoutData');
+&lt;/script&gt;
+
+&lt;!-- Renderer: JSON to HTML --&gt;
+&lt;script&gt;
+  const data = JSON.parse(document.getElementById('layoutData').value);
+  const html = LoyalidLayout.generateLayout(data, 5); // Bootstrap 5
+  document.getElementById('output').innerHTML = html;
+&lt;/script&gt;
+
+&lt;!-- Full page --&gt;
+&lt;script&gt;
+  const page = LoyalidLayout.generateFullHTML(data, { title: 'Article' });
+  // page = complete &lt;!DOCTYPE html&gt; string
 &lt;/script&gt;</code></pre>
 
-      <h5 class="mt-4">CMS Integration (Laravel / Blade)</h5>
-<pre class="bg-dark text-light p-3 rounded"><code>&lt;textarea id="layoutData" name="layout_data" style="display:none;"&gt;{!! $article-&gt;layout_data !!}&lt;/textarea&gt;
-&lt;div id="layoutBuilder" style="height:600px;"&gt;&lt;/div&gt;
-&lt;script src="/dist/index.js"&gt;&lt;/script&gt;
+      <!-- Laravel -->
+      <h5 class="mt-4">Laravel / Blade</h5>
+<pre class="bg-dark text-light p-3 rounded"><code>&lt;!-- resources/views/articles/edit.blade.php --&gt;
+
+{{-- Store layout JSON in hidden textarea --}}
+&lt;textarea id="layoutData" name="layout_data" style="display:none;"&gt;
+  {!! $article-&gt;layout_data ?? '{}' !!}
+&lt;/textarea&gt;
+
+{{-- Mount builder --}}
+&lt;div id="layoutBuilder" style="height: 600px;"&gt;&lt;/div&gt;
+
+{{-- Load library (copy dist/ to public/) --}}
+&lt;script src="{{ asset('dist/index.js') }}"&gt;&lt;/script&gt;
 &lt;script&gt;
   LoyalidLayout.initLayoutBuilder('#layoutBuilder', '#layoutData');
+&lt;/script&gt;
+
+{{-- --- Controller --- --}}
+{{-- public function update(Request $request, Article $article) --}}
+{{--   $article-&gt;update(['layout_data' =&gt; $request-&gt;layout_data]); --}}
+{{-- --- Route --- --}}
+{{-- Route::put('/article/{article}', [ArticleController::class, 'update']); --}}</code></pre>
+
+      <!-- CDN -->
+      <h5 class="mt-4">CDN / No Build Tool</h5>
+<pre class="bg-dark text-light p-3 rounded"><code>&lt;script src="https://unpkg.com/@loyalid/layout-builder"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const { initLayoutBuilder, generateLayout, generateFullHTML } = LoyalidLayout;
+  initLayoutBuilder('#builder', '#layoutData');
 &lt;/script&gt;</code></pre>
 
       <h5 class="mt-4">API</h5>
@@ -57,7 +129,7 @@ const page = generateFullHTML(data, { title: 'My Article' });</code></pre>
         <thead><tr><th>Function</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td><code>initLayoutBuilder(container, textarea, opts)</code></td><td>Mount builder UI, auto-sync JSON to textarea</td></tr>
-          <tr><td><code>generateLayout(data, bootstrap)</code></td><td>Render JSON to HTML string. <code>bootstrap</code>: <code>0</code> (none), <code>4</code>, or <code>5</code></td></tr>
+          <tr><td><code>generateLayout(data, bootstrap)</code></td><td>Render JSON to HTML. <code>bootstrap</code>: <code>0</code>, <code>4</code>, or <code>5</code></td></tr>
           <tr><td><code>generateFullHTML(data, opts)</code></td><td>Full standalone HTML page from JSON</td></tr>
         </tbody>
       </table>
