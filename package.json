@@ -1,7 +1,7 @@
 {
   "name": "@loyalid/layout-builder",
   "version": "1.0.0",
-  "description": "Render layout builder JSON to HTML with Bootstrap 4/5 support",
+  "description": "Layout Builder UI + JSON-to-HTML Renderer for CMS. Bootstrap 4 & 5.",
   "main": "dist/index.js",
   "module": "src/index.js",
   "scripts": {
