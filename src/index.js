@@ -74,8 +74,12 @@ const CSS_PROPS = {
 function buildCSS(styles) {
   let css = '';
   for (const [k, v] of Object.entries(styles)) {
-    if (k === 'font_family_custom' && v) { css += `font-family: ${v}; `; continue; }
-    if (k === 'font_family' && styles.font_family_custom) continue;
+    if (k === 'font_family_custom') continue; // handled below via font_family
+    if (k === 'font_family') {
+      const effectiveFont = (v && v !== '__custom__') ? v : styles.font_family_custom;
+      if (effectiveFont) css += `font-family: ${effectiveFont}; `;
+      continue;
+    }
     if (k === 'wrapper_tag') continue;
     const prop = CSS_PROPS[k];
     if (prop && v != null && v !== '') css += `${prop}: ${v}; `;
@@ -705,6 +709,7 @@ class LayoutBuilder {
       body.appendChild(this._textField('Citation', `_b${index}_citation`, block.citation || '', 'e.g. Author Name', (v) => { block.citation = v; }));
       body.appendChild(this._colorField('Border Left Color', `_b${index}_blc`, block.style.border_left_color || '#cccccc', (v) => { block.style.border_left_color = v; }));
       body.appendChild(this._selectField('Border Left Width', `_b${index}_blw`, block.style.border_left_width || '3px', { '1px': '1px (thin)', '2px': '2px', '3px': '3px', '4px': '4px', '5px': '5px (thick)' }, (v) => { block.style.border_left_width = v; }));
+      body.appendChild(this._colorField('Background Color', `_b${index}_bgc`, block.style.background_color || '', (v) => { block.style.background_color = v; }, 'Transparent', () => { block.style.background_color = ''; }));
       body.appendChild(renderFontFamilyField(block));
       body.appendChild(this._selectField('Font Size', `_b${index}_fs`, toShorthand('font_size', block.style.font_size), FONT_SIZES, (v) => { block.style.font_size = toCSS('font_size', v); }));
       body.appendChild(this._selectField('Line Height', `_b${index}_lh`, toShorthand('line_height', block.style.line_height), LINE_HEIGHTS, (v) => { block.style.line_height = toCSS('line_height', v); }));
@@ -740,11 +745,6 @@ class LayoutBuilder {
       taWrap.appendChild(ta);
       body.appendChild(taWrap);
 
-      body.appendChild(this._selectField('Font Size', `_b${index}_fs`, toShorthand('font_size', block.style.font_size), FONT_SIZES, (v) => { block.style.font_size = toCSS('font_size', v); }));
-      body.appendChild(this._selectField('Line Height', `_b${index}_lh`, toShorthand('line_height', block.style.line_height), LINE_HEIGHTS, (v) => { block.style.line_height = toCSS('line_height', v); }));
-      body.appendChild(this._selectField('Text Align', `_b${index}_ta`, block.style.text_align || 'left', { left: 'Left', center: 'Center', right: 'Right', justify: 'Justify' }, (v) => { block.style.text_align = v; }));
-      body.appendChild(this._selectField('Letter Spacing', `_b${index}_ls`, toShorthand('letter_spacing', block.style.letter_spacing), LETTER_SPACINGS, (v) => { block.style.letter_spacing = toCSS('letter_spacing', v); }));
-      body.appendChild(this._selectField('Text Transform', `_b${index}_tt`, block.style.text_transform || '', { '': 'None', uppercase: 'Uppercase', lowercase: 'Lowercase', capitalize: 'Capitalize' }, (v) => { block.style.text_transform = v; }));
       body.appendChild(renderFontFamilyField(block));
       body.appendChild(this._selectField('Font Size', `_b${index}_fs`, toShorthand('font_size', block.style.font_size), FONT_SIZES, (v) => { block.style.font_size = toCSS('font_size', v); }));
       body.appendChild(this._selectField('Line Height', `_b${index}_lh`, toShorthand('line_height', block.style.line_height), LINE_HEIGHTS, (v) => { block.style.line_height = toCSS('line_height', v); }));
