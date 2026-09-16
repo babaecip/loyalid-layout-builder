@@ -8,6 +8,11 @@ Layout Builder UI + JSON-to-HTML Renderer for CMS. Supports Bootstrap 4/5, Tailw
 npm install @loyalid/layout-builder
 ```
 
+Or from GitHub:
+```bash
+npm install babaecip/loyalid-layout-builder
+```
+
 Or via CDN:
 ```html
 <script src="https://unpkg.com/@loyalid/layout-builder"></script>
